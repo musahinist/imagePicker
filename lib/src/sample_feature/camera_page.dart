@@ -49,7 +49,7 @@ class _CameraPageState extends State<CameraPage> {
                     backgroundImage:
                         file != null ? FileImage(File(file!.path)) : null,
                   ),
-            ))
+            ),)
         // FutureBuilder<List<CameraDescription>>(
         //     future: availableCameras(),
         //     builder: (context, snapshot) {
@@ -85,7 +85,7 @@ class TakePictureScreenState extends State<TakePictureScreen>
   late TabController _tabController;
   List<double> exposureList = [];
   XFile? image;
-  IconData flashIcon = Icons.flash_auto;
+  final flashIcon = FlasModeNotifier();
   bool isCamera = true;
 
   double exposure = 0;
@@ -94,11 +94,12 @@ class TakePictureScreenState extends State<TakePictureScreen>
   double maxZoom = 1;
   double minZoom = 1;
   double curZoom = 1;
+  double initialZoom = 1;
   bool isZooming = false;
   @override
   void initState() {
     super.initState();
-    //SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+   
     // SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle
     //     .dark); // To display the current output from the Camera,
     // create a CameraController.
@@ -106,9 +107,9 @@ class TakePictureScreenState extends State<TakePictureScreen>
       // Get a specific camera from the list of available cameras.
       widget.cameraList.first,
       // Define the resolution to use.
-      ResolutionPreset.medium,
+      ResolutionPreset.high,
     );
-
+ SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     // Next, initialize the controller. This returns a Future.
 
     _tabController = TabController(length: 2, vsync: this);
@@ -131,6 +132,21 @@ class TakePictureScreenState extends State<TakePictureScreen>
     // });
   }
 
+  void _onViewFinderTap(TapDownDetails details, BoxConstraints constraints) {
+    if (_controller == null) {
+      return;
+    }
+
+    final CameraController cameraController = _controller;
+
+    final offset = Offset(
+      details.localPosition.dx / constraints.maxWidth,
+      details.localPosition.dy / constraints.maxHeight,
+    );
+    cameraController.setExposurePoint(offset);
+    cameraController.setFocusPoint(offset);
+  }
+
   @override
   void didChangeDependencies() async {
     // TODO: implement didChangeDependencies
@@ -150,6 +166,7 @@ class TakePictureScreenState extends State<TakePictureScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
@@ -223,65 +240,90 @@ class TakePictureScreenState extends State<TakePictureScreen>
                     );
                   },
                 ),
-                IconButton(
-                  icon: Icon(flashIcon),
-                  onPressed: () {
-                    showMenu(
-                      shape: StadiumBorder(),
-                      position: RelativeRect.fromSize(
-                          Rect.fromLTWH(0, 30, 20, 30), Size.zero),
-                      context: context,
-                      items: <PopupMenuEntry<double>>[
-                        PopupMenuItem<double>(
-                          enabled: false,
-                          onTap: () {},
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  _controller.setFlashMode(FlashMode.off);
+                ValueListenableBuilder<IconData>(
+                    valueListenable: flashIcon,
+                    builder: (context, icon, _) {
+                      return IconButton(
+                        icon: Icon(icon),
+                        onPressed: () {
+                          showMenu(
+                            shape: StadiumBorder(),
+                            position: RelativeRect.fromSize(
+                                Rect.fromLTWH(0, 30, 20, 30), Size.zero),
+                            context: context,
+                            items: <PopupMenuEntry<double>>[
+                              PopupMenuItem<double>(
+                                enabled: false,
+                                onTap: () {},
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        _controller.setFlashMode(FlashMode.off);
+                                        flashIcon
+                                            .changeFlasMode(Icons.flash_off);
 
-                                  flashIcon = Icons.flash_off;
-                                  Navigator.of(context).pop();
-                                  setState(() {});
-                                },
-                                icon: Icon(Icons.flash_off),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  _controller.setFlashMode(FlashMode.auto);
-                                  flashIcon = Icons.flash_auto;
-                                  Navigator.of(context).pop();
-                                  setState(() {});
-                                },
-                                icon: Icon(Icons.flash_auto),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  _controller.setFlashMode(FlashMode.always);
-                                  flashIcon = Icons.flash_on;
-                                  Navigator.of(context).pop();
-                                  setState(() {});
-                                },
-                                icon: Icon(Icons.flash_on),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  _controller.setFlashMode(FlashMode.torch);
-                                  flashIcon = Icons.flashlight_on;
-                                  Navigator.of(context).pop();
-                                  setState(() {});
-                                },
-                                icon: Icon(Icons.flashlight_on),
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: Icon(
+                                        Icons.flash_off,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        _controller
+                                            .setFlashMode(FlashMode.auto);
+                                        flashIcon
+                                            .changeFlasMode(Icons.flash_auto);
+
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: Icon(
+                                        Icons.flash_auto,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        _controller
+                                            .setFlashMode(FlashMode.always);
+                                        flashIcon
+                                            .changeFlasMode(Icons.flash_on);
+                                        //    flashIcon = Icons.flash_on;
+                                        Navigator.of(context).pop();
+                                        setState(() {});
+                                      },
+                                      icon: Icon(
+                                        Icons.flash_on,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        _controller
+                                            .setFlashMode(FlashMode.torch);
+                                        flashIcon.changeFlasMode(
+                                            Icons.flashlight_on);
+
+                                        Navigator.of(context).pop();
+                                        setState(() {});
+                                      },
+                                      icon: Icon(
+                                        Icons.flashlight_on,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                          );
+                        },
+                      );
+                    }),
                 // IconButton(
                 //   onPressed: () {
                 //     _controller.setZoomLevel(2);
@@ -322,25 +364,38 @@ class TakePictureScreenState extends State<TakePictureScreen>
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
                 // If the Future is complete, display the preview.
-                return InteractiveViewer(
-                  panEnabled: false,
-                  minScale: minZoom,
-                  maxScale: maxZoom,
-                  onInteractionUpdate: (details) {
-                    if (details.scale >= minZoom && details.scale <= maxZoom) {
-                      isZooming = true;
-                      curZoom = details.scale;
-                      _controller.setZoomLevel(details.scale);
-                      setState(() {});
-                    }
-                  },
-                  onInteractionEnd: (details) {
-                    isZooming = false;
+                return SizedBox(
+                  // width: size.width,
+                  // height: size.height,
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: CameraPreview(
+                      _controller,
+                      child: LayoutBuilder(builder:
+                          (BuildContext context, BoxConstraints constraints) {
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onScaleStart: (details) {
+                            initialZoom = curZoom;
+                          },
+                          onScaleUpdate: (details) async {
+                            isZooming = true;
+                            final double scale = (initialZoom * details.scale)
+                                .clamp(minZoom, maxZoom);
+                            await _controller.setZoomLevel(scale);
+                            curZoom = scale;
+                            setState(() {});
+                          },
+                          onScaleEnd: (details) {
+                            isZooming = false;
 
-                    setState(() {});
-                  },
-                  child: CameraPreview(
-                    _controller,
+                            setState(() {});
+                          },
+                          onTapDown: (details) =>
+                              _onViewFinderTap(details, constraints),
+                        );
+                      }),
+                    ),
                   ),
                 );
               } else {
@@ -410,6 +465,7 @@ class TakePictureScreenState extends State<TakePictureScreen>
                       onTap: () {
                         showModalBottomSheet(
                             enableDrag: true,
+                            isScrollControlled: true,
                             context: context,
                             builder: (context) => DisplayPictureScreen(
                                   imagePath: image!.path,
@@ -472,19 +528,30 @@ class DisplayPictureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: Image.file(
+    return Container(
+      height: 500,
+      child: Column(
+        children: [
+          Image.file(
             File(imagePath),
-            fit: BoxFit.contain,
+            // fit: BoxFit.contain,
           ),
-        ),
-        IconButton(
-          icon: Icon(Icons.delete, color: Colors.red),
-          onPressed: onDelete,
-        )
-      ],
+          Container(
+            height: 50,
+            child: IconButton(
+              icon: Icon(Icons.delete, color: Colors.red),
+              onPressed: onDelete,
+            ),
+          )
+        ],
+      ),
     );
+  }
+}
+
+class FlasModeNotifier extends ValueNotifier<IconData> {
+  FlasModeNotifier() : super(Icons.flash_auto);
+  void changeFlasMode(IconData icon) {
+    value = icon;
   }
 }
